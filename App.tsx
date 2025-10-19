@@ -18,7 +18,7 @@ import { extractContentFromFile, createFullStudyPlan } from './services/geminiSe
 import { Chapter, DailyPlan, Subject, SubjectWithChapters, Stream } from './types';
 
 // PDF worker path is hardcoded for stability with CDN builds.
-pdfjs.GlobalWorkerOptions.workerSrc = '//unpkg.com/pdfjs-dist@4.5.136/build/pdf.worker.mjs';
+pdfjs.GlobalWorkerOptions.workerSrc = '//unpkg.com/pdfjs-dist@4.4.168/build/pdf.worker.mjs';
 
 type AppState = 'CURRICULUM_SELECTION' | 'SSC_BOOK_SELECTION' | 'STREAM_SELECTION' | 'SUBJECT_SELECTION' | 'FILE_UPLOAD' | 'CHAPTER_LIST' | 'DURATION_SELECTION' | 'ROUTINE_DISPLAY';
 type CurriculumType = 'general' | 'ssc-26';
