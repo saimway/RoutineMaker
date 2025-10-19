@@ -1,5 +1,5 @@
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { pdfjs } from 'react-pdf';
 
 import FileUpload from './components/FileUpload';
@@ -21,6 +21,23 @@ import { Chapter, DailyPlan, Subject, SubjectWithChapters, Stream } from './type
 type AppState = 'CURRICULUM_SELECTION' | 'SSC_BOOK_SELECTION' | 'STREAM_SELECTION' | 'SUBJECT_SELECTION' | 'FILE_UPLOAD' | 'CHAPTER_LIST' | 'DURATION_SELECTION' | 'ROUTINE_DISPLAY';
 type CurriculumType = 'general' | 'ssc-26';
 
+// This is the shape of our saved state
+interface SavedState {
+    appState: AppState;
+    chaptersBySubject: SubjectWithChapters[];
+    routine: DailyPlan[];
+    selectedStream: Stream | null;
+    selectedSubjects: Subject[];
+    remainingChapters: Chapter[];
+    selectedCurriculum: CurriculumType | null;
+}
+const SAVED_STATE_KEY = 'studyRoutineState';
+
+const isAppState = (value: any): value is AppState => {
+    return typeof value === 'string' && ['CURRICULUM_SELECTION', 'SSC_BOOK_SELECTION', 'STREAM_SELECTION', 'SUBJECT_SELECTION', 'FILE_UPLOAD', 'CHAPTER_LIST', 'DURATION_SELECTION', 'ROUTINE_DISPLAY'].includes(value);
+};
+
+
 function App() {
     const [appState, setAppState] = useState<AppState>('CURRICULUM_SELECTION');
     const [chaptersBySubject, setChaptersBySubject] = useState<SubjectWithChapters[]>([]);
@@ -34,13 +51,85 @@ function App() {
     const [remainingChapters, setRemainingChapters] = useState<Chapter[]>([]);
     const [selectedCurriculum, setSelectedCurriculum] = useState<CurriculumType | null>(null);
 
+    // Hydrate state on initial load
+    useEffect(() => {
+        try {
+            const savedStateJSON = sessionStorage.getItem(SAVED_STATE_KEY);
+            const hash = window.location.hash.substring(1);
+            
+            if (savedStateJSON) {
+                const savedState: SavedState = JSON.parse(savedStateJSON);
+                
+                // Hash in URL takes precedence for the current view
+                const initialState = isAppState(hash) ? hash : savedState.appState;
+                setAppState(initialState);
+                if (window.location.hash.substring(1) !== initialState) {
+                    window.location.hash = initialState;
+                }
+
+                setChaptersBySubject(savedState.chaptersBySubject || []);
+                setRoutine(savedState.routine || []);
+                setSelectedStream(savedState.selectedStream || null);
+                setSelectedSubjects(savedState.selectedSubjects || []);
+                setRemainingChapters(savedState.remainingChapters || []);
+                setSelectedCurriculum(savedState.selectedCurriculum || null);
+            } else {
+                 // No saved state, start fresh from hash or default
+                const initialState = isAppState(hash) ? hash : 'CURRICULUM_SELECTION';
+                setAppState(initialState);
+                if (window.location.hash.substring(1) !== initialState) {
+                    window.location.hash = initialState;
+                }
+            }
+        } catch (e) {
+            console.error("Could not rehydrate state:", e);
+            // Start fresh if rehydration fails
+            setAppState('CURRICULUM_SELECTION');
+            window.location.hash = 'CURRICULUM_SELECTION';
+        }
+
+        // Add hashchange listener
+        const handleHashChange = () => {
+            const newHash = window.location.hash.substring(1);
+            if (isAppState(newHash)) {
+                setAppState(newHash);
+            }
+        };
+        window.addEventListener('hashchange', handleHashChange);
+
+        return () => {
+            window.removeEventListener('hashchange', handleHashChange);
+        };
+    }, []); // Runs only once on mount
+
+    // Save state to sessionStorage whenever it changes
+    useEffect(() => {
+        // Don't save while loading or if there's an error, to prevent bad states from being saved.
+        if (isLoading || error) return;
+
+        const stateToSave: SavedState = {
+            appState,
+            chaptersBySubject,
+            routine,
+            selectedStream,
+            selectedSubjects,
+            remainingChapters,
+            selectedCurriculum,
+        };
+        sessionStorage.setItem(SAVED_STATE_KEY, JSON.stringify(stateToSave));
+    }, [appState, chaptersBySubject, routine, selectedStream, selectedSubjects, remainingChapters, selectedCurriculum, isLoading, error]);
+
+    const navigateTo = (newState: AppState) => {
+        window.location.hash = newState;
+    };
+
     const handleError = (message: string) => {
         setError(message);
         setIsLoading(false);
     };
 
     const handleReset = useCallback(() => {
-        setAppState('CURRICULUM_SELECTION');
+        sessionStorage.removeItem(SAVED_STATE_KEY);
         setChaptersBySubject([]);
         setRoutine([]);
         setIsLoading(false);
@@ -50,14 +139,15 @@ function App() {
         setSelectedSubjects([]);
         setRemainingChapters([]);
         setSelectedCurriculum(null);
+        navigateTo('CURRICULUM_SELECTION');
     }, []);
     
     const handleCurriculumSelect = (type: CurriculumType) => {
         setSelectedCurriculum(type);
         if (type === 'general') {
-            setAppState('STREAM_SELECTION');
+            navigateTo('STREAM_SELECTION');
         } else {
-            setAppState('SSC_BOOK_SELECTION');
+            navigateTo('SSC_BOOK_SELECTION');
         }
     };
 
@@ -70,17 +160,17 @@ function App() {
             .filter(subject => subject.chapters.length > 0);
 
         setChaptersBySubject(preloadedChapters);
-        setAppState('CHAPTER_LIST');
+        navigateTo('CHAPTER_LIST');
     };
 
     const handleStreamSelect = (stream: Stream) => {
         setSelectedStream(stream);
-        setAppState('SUBJECT_SELECTION');
+        navigateTo('SUBJECT_SELECTION');
     };
     
     const handleSubjectsSelect = (subjects: Subject[]) => {
         setSelectedSubjects(subjects);
-        setAppState('FILE_UPLOAD');
+        navigateTo('FILE_UPLOAD');
     };
 
     const handleFileUpload = async (file: File) => {
@@ -110,7 +200,7 @@ function App() {
                 chapters: extractedChapters,
              }];
             setChaptersBySubject(groupedChapters);
-            setAppState('CHAPTER_LIST');
+            navigateTo('CHAPTER_LIST');
         } catch (err: any) {
             handleError(err.message || 'An unknown error occurred during file processing.');
         } finally {
@@ -123,7 +213,7 @@ function App() {
         if (selectedCurriculum === 'general') {
             handleGenerateFullStudyPlan(7);
         } else {
-            setAppState('DURATION_SELECTION');
+            navigateTo('DURATION_SELECTION');
         }
     };
 
@@ -160,7 +250,7 @@ function App() {
         try {
             const newRoutine = await createFullStudyPlan(remainingChapters, durationInDays);
             setRoutine(newRoutine);
-            setAppState('ROUTINE_DISPLAY');
+            navigateTo('ROUTINE_DISPLAY');
         } catch (err: any) {
             handleError(err.message || 'An unknown error occurred while creating the routine.');
         } finally {
