@@ -1,3 +1,4 @@
+
 import React, { useState, useCallback } from 'react';
 import { pdfjs } from 'react-pdf';
 
@@ -57,7 +58,7 @@ function App() {
     const handleCurriculumSelect = (type: CurriculumType) => {
         setSelectedCurriculum(type);
         if (type === 'general') {
-            setAppState('FILE_UPLOAD');
+            setAppState('STREAM_SELECTION');
         } else {
             setAppState('SSC_BOOK_SELECTION');
         }
@@ -240,7 +241,7 @@ function App() {
             case 'FILE_UPLOAD':
                 return <FileUpload onFileUpload={handleFileUpload} />;
             case 'CHAPTER_LIST':
-                return <ChapterList chaptersBySubject={chaptersBySubject} onConfirm={handleConfirmChapters} onReset={handleReset} />;
+                return <ChapterList chaptersBySubject={chaptersBySubject} onConfirm={handleConfirmChapters} onReset={handleReset} isSscFlow={selectedCurriculum === 'ssc-26'} />;
             case 'DURATION_SELECTION':
                 return <DurationSelector onConfirm={handleGenerateFullStudyPlan} />;
             case 'ROUTINE_DISPLAY':

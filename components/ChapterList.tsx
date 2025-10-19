@@ -8,9 +8,10 @@ interface ChapterListProps {
   chaptersBySubject: SubjectWithChapters[];
   onConfirm: (remainingChapters: Chapter[]) => void;
   onReset: () => void;
+  isSscFlow: boolean;
 }
 
-const ChapterList: React.FC<ChapterListProps> = ({ chaptersBySubject, onConfirm, onReset }) => {
+const ChapterList: React.FC<ChapterListProps> = ({ chaptersBySubject, onConfirm, onReset, isSscFlow }) => {
   
   const allChapters = chaptersBySubject.flatMap(s => s.chapters);
   const [completedChapters, setCompletedChapters] = useState<Set<string>>(new Set());
@@ -37,6 +38,7 @@ const ChapterList: React.FC<ChapterListProps> = ({ chaptersBySubject, onConfirm,
   };
 
   const remainingCount = allChapters.length - completedChapters.size;
+  const buttonText = isSscFlow ? "Next: Plan Duration" : "Generate 7-Day Plan";
 
   return (
     <div className="w-full max-w-4xl mx-auto animate-fade-in">
@@ -86,7 +88,7 @@ const ChapterList: React.FC<ChapterListProps> = ({ chaptersBySubject, onConfirm,
               className="w-full sm:w-auto bg-gradient-to-r from-cyan-500 to-purple-600 hover:from-cyan-400 hover:to-purple-500 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all duration-300 transform hover:scale-105 flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed disabled:scale-100"
             >
                 <SparklesIcon className="w-5 h-5" />
-                Next: Plan Duration
+                {buttonText}
             </button>
             <button
                 onClick={onReset}
