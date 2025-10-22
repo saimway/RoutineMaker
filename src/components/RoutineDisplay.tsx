@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { DailyPlan } from '../types';
 import { RestartIcon } from './icons/RestartIcon';
@@ -12,53 +11,117 @@ interface RoutineDisplayProps {
   onReset: () => void;
 }
 
+// A helper function to strip non-English characters for PDF generation
+const cleanupTextForPdf = (text: string): string => {
+    // Removes text in parentheses (often used for Bengali script)
+    // and any other non-ASCII characters to prevent font corruption in the PDF.
+    // e.g., "Shuva (সুভা)" -> "Shuva"
+    return text.replace(/\s\(.*\)/, '').replace(/[^\x00-\x7F]/g, "").trim();
+};
+
 const RoutineDisplay: React.FC<RoutineDisplayProps> = ({ routine, onReset }) => {
   const [isDownloading, setIsDownloading] = useState(false);
 
   const handleDownloadPdf = () => {
     setIsDownloading(true);
     try {
-      const { jsPDF } = jspdf;
-      const doc = new jsPDF();
-      
-      doc.setFontSize(18);
-      doc.text("Your Personalized Study Routine", 14, 22);
+        const { jsPDF } = jspdf;
+        const doc = new jsPDF({ orientation: 'p', unit: 'mm', format: 'a4' });
 
-      let y = 30;
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const margin = 10;
+        let y = 20;
 
-      routine.forEach((dayPlan) => {
-        if (y > 270) {
-          doc.addPage();
-          y = 20;
-        }
-
-        doc.setFontSize(14);
+        // Title
+        doc.setFontSize(18);
         doc.setFont(undefined, 'bold');
-        doc.text(dayPlan.day, 14, y);
-        y += 7;
-        
-        doc.setFont(undefined, 'normal');
-        doc.setFontSize(10);
+        doc.setTextColor(30, 41, 59); // slate-800
+        doc.text("Your Personalized Study Routine", margin, y);
+        y += 15;
 
-        dayPlan.slots.forEach(slot => {
-            if (y > 280) {
-              doc.addPage();
-              y = 20;
+        routine.forEach((dayPlan) => {
+            // Check for page break before adding a new day header
+            // 10 for header + 7 for table header + 10 for first row (estimate)
+            if (y > pageHeight - 30) { 
+                doc.addPage();
+                y = 20;
             }
-            const timeText = `${slot.time}:`;
-            const topicText = `${slot.topic}`;
-            const activityText = `(${slot.activity})`;
 
-            doc.text(timeText, 16, y);
-            doc.text(topicText, 45, y);
-            doc.text(activityText, 47, y + 4);
+            // Day Header
+            doc.setFontSize(14);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(255, 255, 255); // white
+            doc.setFillColor(6, 182, 212); // cyan-500
+            doc.rect(margin, y - 5, pageWidth - (margin * 2), 10, 'F');
+            doc.text(cleanupTextForPdf(dayPlan.day), margin + 3, y);
             y += 10;
+
+            // Table Header
+            const tableHeaderY = y;
+            doc.setFontSize(10);
+            doc.setFont(undefined, 'bold');
+            doc.setTextColor(51, 65, 85); // slate-700
+            doc.text("Time", margin, tableHeaderY);
+            doc.text("Topic / Subject", margin + 35, tableHeaderY);
+            doc.text("Suggested Activity", margin + 110, tableHeaderY);
+            doc.setDrawColor(226, 232, 240); // slate-200
+            doc.line(margin, tableHeaderY + 2, pageWidth - margin, tableHeaderY + 2);
+            y += 7;
+
+            // Table Rows
+            dayPlan.slots.forEach((slot, slotIndex) => {
+                const isEven = slotIndex % 2 === 0;
+                
+                const timeText = slot.time;
+                const topicText = doc.splitTextToSize(cleanupTextForPdf(slot.topic), 70); // 70mm width
+                const activityText = doc.splitTextToSize(cleanupTextForPdf(slot.activity), 75); // 75mm width
+                
+                const rowHeight = Math.max(topicText.length, activityText.length) * 5 + 6; // Dynamic row height
+
+                // Check for page break before adding a new row
+                if (y + rowHeight > pageHeight - 15) {
+                    doc.addPage();
+                    y = 20;
+                    // Redraw day header and table header on new page
+                    doc.setFontSize(14);
+                    doc.setFont(undefined, 'bold');
+                    doc.setTextColor(255, 255, 255);
+                    doc.setFillColor(6, 182, 212);
+                    doc.rect(margin, y - 5, pageWidth - (margin * 2), 10, 'F');
+                    doc.text(cleanupTextForPdf(dayPlan.day) + " (cont.)", margin + 3, y);
+                    y += 10;
+                    doc.setFontSize(10);
+                    doc.setFont(undefined, 'bold');
+                    doc.setTextColor(51, 65, 85);
+                    doc.text("Time", margin, y);
+                    doc.text("Topic / Subject", margin + 35, y);
+                    doc.text("Suggested Activity", margin + 110, y);
+                    doc.setDrawColor(226, 232, 240);
+                    doc.line(margin, y + 2, pageWidth - margin, y + 2);
+                    y += 7;
+                }
+
+                if (isEven) {
+                    doc.setFillColor(241, 245, 249); // slate-100
+                    doc.rect(margin, y - 5, pageWidth - (margin * 2), rowHeight, 'F');
+                }
+                
+                doc.setFontSize(9);
+                doc.setFont(undefined, 'normal');
+                doc.setTextColor(71, 85, 105); // slate-600
+
+                doc.text(timeText, margin, y);
+                doc.text(topicText, margin + 35, y);
+                doc.text(activityText, margin + 110, y);
+
+                y += rowHeight;
+            });
+
+            y += 5; // Space between days
         });
 
-        y += 5; // Add space between days
-      });
-
-      doc.save("study_routine.pdf");
+        doc.save("study_routine.pdf");
     } catch (error) {
         console.error("Failed to generate PDF:", error);
         alert("Sorry, there was an error creating the PDF. Please try again.");
@@ -94,21 +157,26 @@ const RoutineDisplay: React.FC<RoutineDisplayProps> = ({ routine, onReset }) => 
         <div className="space-y-8">
           {routine.map((dayPlan) => (
             <div key={dayPlan.day}>
-              <h3 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-4 border-b-2 border-slate-700 pb-2 sticky top-0 bg-slate-900/50 backdrop-blur-sm py-2 px-2 -mx-2">
+              <h3 className="text-xl sm:text-2xl font-bold text-cyan-400 mb-4 border-b-2 border-slate-700 pb-2 sticky top-0 bg-slate-900 backdrop-blur-sm py-2 px-2 -mx-2 z-10">
                 {dayPlan.day}
               </h3>
               <ul className="space-y-4">
-                {dayPlan.slots.map((slot, index) => (
-                  <li key={index} className="flex flex-col sm:flex-row gap-2 sm:gap-4 p-4 rounded-lg bg-slate-800/60 border border-slate-700/50">
-                    <div className="flex-shrink-0 w-full sm:w-40">
-                      <p className="font-semibold text-purple-300">{slot.time}</p>
-                    </div>
-                    <div className="flex-grow">
-                      <p className="font-bold text-slate-100">{slot.topic}</p>
-                      <p className="text-sm text-slate-400 mt-1">{slot.activity}</p>
-                    </div>
-                  </li>
-                ))}
+                {dayPlan.slots.map((slot, index) => {
+                    const isBreak = slot.topic.toLowerCase().includes('break') || slot.topic.toLowerCase().includes('lunch');
+                    return (
+                        <li key={index} className="flex items-start gap-4 p-4 rounded-lg bg-slate-800/60 transition-all hover:bg-slate-800/90 border-l-4"
+                            style={{ borderColor: isBreak ? '#f59e0b' : '#22d3ee' }} // amber-500 or cyan-400
+                        >
+                            <div className="flex-shrink-0 w-full sm:w-36">
+                                <p className="font-mono text-sm text-purple-300">{slot.time}</p>
+                            </div>
+                            <div className="flex-grow">
+                                <p className={`font-bold ${isBreak ? 'text-amber-300' : 'text-slate-100'}`}>{slot.topic}</p>
+                                <p className="text-sm text-slate-400 mt-1">{slot.activity}</p>
+                            </div>
+                        </li>
+                    );
+                })}
               </ul>
             </div>
           ))}

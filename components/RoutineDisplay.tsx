@@ -12,6 +12,14 @@ interface RoutineDisplayProps {
   onReset: () => void;
 }
 
+// A helper function to strip non-English characters for PDF generation
+const cleanupTextForPdf = (text: string): string => {
+    // Removes text in parentheses (often used for Bengali script)
+    // and any other non-ASCII characters to prevent font corruption in the PDF.
+    // e.g., "Shuva (সুভা)" -> "Shuva"
+    return text.replace(/\s\(.*\)/, '').replace(/[^\x00-\x7F]/g, "").trim();
+};
+
 const RoutineDisplay: React.FC<RoutineDisplayProps> = ({ routine, onReset }) => {
   const [isDownloading, setIsDownloading] = useState(false);
 
@@ -22,6 +30,7 @@ const RoutineDisplay: React.FC<RoutineDisplayProps> = ({ routine, onReset }) => 
       const doc = new jsPDF();
       
       doc.setFontSize(18);
+      doc.setTextColor(40, 40, 40); // Dark Gray for title
       doc.text("Your Personalized Study Routine", 14, 22);
 
       let y = 30;
@@ -34,7 +43,8 @@ const RoutineDisplay: React.FC<RoutineDisplayProps> = ({ routine, onReset }) => 
 
         doc.setFontSize(14);
         doc.setFont(undefined, 'bold');
-        doc.text(dayPlan.day, 14, y);
+        doc.setTextColor(6, 182, 212); // --cyan-500
+        doc.text(cleanupTextForPdf(dayPlan.day), 14, y);
         y += 7;
         
         doc.setFont(undefined, 'normal');
@@ -46,12 +56,20 @@ const RoutineDisplay: React.FC<RoutineDisplayProps> = ({ routine, onReset }) => 
               y = 20;
             }
             const timeText = `${slot.time}:`;
-            const topicText = `${slot.topic}`;
-            const activityText = `(${slot.activity})`;
+            const topicText = cleanupTextForPdf(slot.topic);
+            const activityText = `(${cleanupTextForPdf(slot.activity)})`;
 
+            doc.setTextColor(168, 85, 247); // --purple-500
             doc.text(timeText, 16, y);
+
+            doc.setTextColor(40, 40, 40); // Dark Gray for content
             doc.text(topicText, 45, y);
+            
+            doc.setFontSize(9);
+            doc.setTextColor(100, 116, 139); // --slate-500
             doc.text(activityText, 47, y + 4);
+            
+            doc.setFontSize(10); // Reset font size for next slot
             y += 10;
         });
 

@@ -1,7 +1,6 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { Chapter, DailyPlan, Subject } from '../types';
 
-// FIX: Per coding guidelines, API key must be obtained from process.env.API_KEY. This also resolves the TypeScript error with import.meta.env.
 const ai = new GoogleGenAI({ apiKey: process.env.API_KEY as string });
 
 export async function extractContentFromFile(base64Images: string[], selectedBooks?: Subject[]): Promise<Chapter[]> {
@@ -67,47 +66,51 @@ export async function createFullStudyPlan(remainingChapters: Chapter[], duration
     const totalChapters = remainingChapters.length;
 
     const prompt = `
-        You are an expert academic planner. Create a detailed, day-by-day study plan for the entire duration specified.
+        You are an expert academic planner specializing in the Bangladesh SSC curriculum. Create a detailed, intelligent, day-by-day study plan for the entire duration specified.
 
-        **Study Context:**
-        - **Total Duration:** The student has exactly ${durationInDays} days to prepare.
-        - **Total Topics:** There are ${totalChapters} topics to cover.
+        **Student's Goal:**
+        - **Study Duration:** ${durationInDays} days.
+        - **Topics to Cover:** ${totalChapters} topics.
         - **Topic List:** ${chapterNames}
 
-        **Prioritization Rules:**
-        - **High-Priority Subjects:** The student has identified the following subjects as high-priority: Physics, Chemistry, Biology, Higher Math, and General Math.
-        - **Scheduling Priority:** When creating the plan, give precedence to chapters from these high-priority subjects. Schedule them earlier in the timeline to ensure they are covered thoroughly. While all subjects must be completed, the science and math topics should be front-loaded.
-        - **Completion Guarantee:** Despite this prioritization, you MUST ensure that every single chapter from the **Topic List** is included in the plan and completed within the ${durationInDays}-day period. No topic should be left out.
+        **Your Task: Create the Smartest Possible Study Plan**
 
-        **Time Allocation Based on Difficulty (New Critical Rule):**
-        1.  **Assess Difficulty:** For each chapter in the **Topic List**, internally assess its difficulty. Use your expert knowledge of the SSC curriculum to categorize topics as 'Easy', 'Medium', or 'Hard'. For example, a foundational chapter like 'Set & Function' is easier than 'Trigonometry'. 'Motion' is generally easier than 'Modern Physics'.
-        2.  **Allocate Time:** When creating the daily time slots, assign study durations based on this difficulty:
-            - **Hard Topics:** Allocate longer slots (e.g., "9:00 AM - 11:30 AM", approx. 2.5 hours).
-            - **Medium Topics:** Allocate standard slots (e.g., "12:00 PM - 1:30 PM", approx. 1.5 hours).
-            - **Easy Topics:** Allocate shorter slots (e.g., "2:30 PM - 3:30 PM", approx. 1 hour).
-        3.  **Adherence:** This is not a suggestion; it is a requirement. The duration of each study slot for a chapter must reflect its assessed difficulty.
+        Instead of just filling a schedule, your plan must be strategic. Use the following principles:
 
-        **Revision Strategy:**
-        - **Cover New Topics First:** Prioritize covering all new chapters from the **Topic List** before scheduling extensive revision periods.
-        - **Strategic Revision:** Incorporate revision slots logically. For example, a "Weekly Review" at the end of every 7 days to go over the topics covered that week is excellent.
-        - **Final Review:** Schedule a more intensive review period during the last 10-15% of the total duration (e.g., the last 3-4 days of a 30-day plan).
-        - **No Premature Revision:** Do not schedule revision for topics that have not been covered yet in the plan. All revision must be for previously studied material.
+        **1. Intelligent Prioritization & Sequencing:**
+        - **High-Impact Subjects:** Subjects like Physics, Chemistry, Biology, Higher Math, and General Math are often challenging and foundational. Ensure they receive adequate attention, especially in the earlier parts of the plan, but do not neglect other subjects.
+        - **Logical Flow:** Where possible, arrange chapters in a logical order. For example, cover foundational concepts in a subject before moving on to more advanced, dependent topics.
+        - **Interleaving for Retention:** This is critical. Do not schedule long blocks of a single subject. Mix subjects throughout each day (e.g., a session of Math, followed by Bangla, then Physics). This proven learning technique boosts memory and understanding.
 
-        **Instructions:**
-        1.  **Full Plan:** Generate a complete study plan for all ${durationInDays} days. The output must be an array of ${durationInDays} objects.
-        2.  **Adaptive Pacing:** This is critical. Analyze the number of topics versus the duration.
-            - If the duration is short (e.g., 80 chapters in 30 days), create an intensive schedule with multiple chapters per day, respecting the difficulty-based time allocation.
-            - If the duration is long (e.g., 20 chapters in 60 days), create a relaxed schedule, dedicating more time to single topics, and include more revision and practice days.
-        3.  **Topic Distribution and Interleaving:** This is a critical requirement. Do not create a plan that focuses on one subject for many days before moving to the next. Instead, **mix the subjects up**. A good daily schedule should ideally include chapters from different subjects (e.g., Physics, Math, and Bangla on the same day). This technique, known as interleaving, improves learning and retention. While high-priority subjects should be covered early, they must be interleaved with other subjects throughout the plan. Ensure all topics from the list are logically distributed and covered within the ${durationInDays}-day period.
-        4.  **Daily Structure:** For each day, provide a 'day' identifier (e.g., "Day 1", "Day 2", ... "Day ${durationInDays}") and a list of 'slots'.
-        5.  **Slot Content:** Each time slot must include 'time' (a specific duration reflecting the topic's difficulty), 'topic' (a specific chapter name from the Topic List, 'Revision', 'Practice Test', or 'Break'), and a suggested 'activity' (e.g., 'Deep reading and note-taking', 'Solve past paper questions'). Use the exact chapter names provided in the **Topic List**.
-        6.  **Breaks & Revision:** Incorporate short breaks, a lunch break, and dedicated revision sessions as defined in the **Revision Strategy** to ensure retention and prevent burnout.
-        7.  **Output Format:** The final output must be a valid JSON array of objects, where each object represents a single day of the plan.
-        8.  **Final Verification:** Before outputting the JSON, perform a final check to confirm that every single topic provided in the **Topic List** is present in the generated plan's 'topic' slots. This is the most important rule; failure to include all chapters will render the plan useless.
+        **2. Dynamic Time Allocation Based on Topic Difficulty:**
+        - **Expert Assessment:** Use your knowledge of the SSC curriculum to analyze each chapter in the **Topic List**. Assess its relative difficulty, density, and the typical time required for a student to master it.
+        - **Allocate Time Accordingly:** Assign study durations that reflect your assessment. This is key to a realistic plan. For example:
+            - A conceptually dense and lengthy chapter (e.g., 'Trigonometry', 'Vectors', 'Mineral Resources - Fossils') should be given a longer slot of 2-2.5 hours.
+            - A medium-complexity chapter might need 1.5 hours.
+            - A straightforward or shorter chapter (e.g., a single poem or a simple prose piece) could be covered in a 1-hour slot.
+        - **Flexibility:** This is not about rigid rules for specific chapters but about you applying your expert judgment across the entire syllabus provided.
+
+        **3. Strategic Revision:**
+        - **Consolidate Learning:** Integrate revision slots strategically. A weekly review every 7 days is a good practice.
+        - **Final Preparation:** Dedicate the last 10-15% of the schedule (e.g., the last few days of a 30-day plan) to intensive final revisions and practice tests.
+        - **Relevant Revision:** Only schedule revision for topics that have already been covered in your plan.
+
+        **4. Adaptive Pacing:**
+        - **Intensive vs. Relaxed:** The plan's intensity must match the timeline.
+            - For a short duration with many topics, the daily schedule will be packed.
+            - For a longer duration with fewer topics, the schedule can be more relaxed, with more time per topic and more frequent breaks or practice days.
+
+        **Instructions for Output:**
+        1.  **Complete Plan:** Generate a plan for all ${durationInDays} days.
+        2.  **Daily Structure:** Each day should be an object with a 'day' identifier ("Day 1", "Day 2", etc.) and a list of 'slots'.
+        3.  **Slot Content:** Each slot must have 'time', 'topic' (use the exact chapter name from the list, or 'Revision', 'Practice Test', 'Break'), and a concise 'activity' (e.g., 'Concept study & notes', 'Solve practice problems').
+        4.  **Well-being:** Include necessary breaks (short breaks, lunch) to prevent burnout.
+        5.  **Final Verification:** Before outputting, double-check that **every single chapter** from the **Topic List** is included in the plan. This is the most crucial requirement.
+        6.  **JSON Format:** The final output must be a valid JSON array of objects.
     `;
 
     const response = await ai.models.generateContent({
-        model: 'gemini-2.5-flash',
+        model: 'gemini-2.5-pro',
         contents: prompt,
         config: {
             temperature: 0.2,

@@ -78,13 +78,19 @@ export async function createFullStudyPlan(remainingChapters: Chapter[], duration
         - **Scheduling Priority:** When creating the plan, give precedence to chapters from these high-priority subjects. Schedule them earlier in the timeline to ensure they are covered thoroughly. While all subjects must be completed, the science and math topics should be front-loaded.
         - **Completion Guarantee:** Despite this prioritization, you MUST ensure that every single chapter from the **Topic List** is included in the plan and completed within the ${durationInDays}-day period. No topic should be left out.
 
-        **Time Allocation Based on Difficulty (New Critical Rule):**
-        1.  **Assess Difficulty:** For each chapter in the **Topic List**, internally assess its difficulty. Use your expert knowledge of the SSC curriculum to categorize topics as 'Easy', 'Medium', or 'Hard'. For example, a foundational chapter like 'Set & Function' is easier than 'Trigonometry'. 'Motion' is generally easier than 'Modern Physics'.
-        2.  **Allocate Time:** When creating the daily time slots, assign study durations based on this difficulty:
-            - **Hard Topics:** Allocate longer slots (e.g., "9:00 AM - 11:30 AM", approx. 2.5 hours).
-            - **Medium Topics:** Allocate standard slots (e.g., "12:00 PM - 1:30 PM", approx. 1.5 hours).
-            - **Easy Topics:** Allocate shorter slots (e.g., "2:30 PM - 3:30 PM", approx. 1 hour).
-        3.  **Adherence:** This is not a suggestion; it is a requirement. The duration of each study slot for a chapter must reflect its assessed difficulty.
+        **Time Allocation Based on Chapter Size & Difficulty (New Critical Rule):**
+        1.  **Assess Chapter Size and Difficulty:** For each chapter in the **Topic List**, internally assess its size, complexity, and overall difficulty. Use your expert knowledge of the SSC curriculum. A chapter like 'Trigonometry' is both longer and more complex than a chapter like 'Set & Function'.
+        2.  **Allocate Time Based on Assessment:** Assign study durations that directly correspond to your assessment of each chapter's size and difficulty. Use the following categories and specific subject guidance:
+            - **Large/Hard Topics:** Allocate 2 to 2.5-hour slots (e.g., "9:00 AM - 11:30 AM").
+            - **Medium Topics:** Allocate 1.5-hour slots (e.g., "12:00 PM - 1:30 PM").
+            - **Small/Easy Topics:** Allocate 1-hour slots (e.g., "2:30 PM - 3:30 PM").
+        3.  **Specific Subject Guidance (Mandatory):** To guide your assessment, you MUST follow these explicit rules:
+            - **Mathematics (General & Higher):** Chapters like 'Practical Geometry', 'Trigonometry', and 'Vectors' are large and complex. They require a minimum of 2 to 2.5 hours per study session.
+            - **Physics:** Most Physics chapters are conceptually dense and require 2 to 2.5 hours for theory and problem-solving.
+            - **Chemistry:** Chapter 11 ('Mineral Resources - Fossils') is exceptionally large and must be allocated at least a 2.5-hour slot, possibly broken into multiple sessions if necessary. Other chapters typically require 1.5 to 2 hours.
+            - **Bangla:** Most prose and poetry chapters are relatively small and should be allocated 1 to 1.5 hours. However, the novel '1971' is a significant piece of literature and requires a dedicated 2.5-hour slot.
+            - **English 1st Paper:** The units are generally short. Allocate around 1 hour for each.
+        4.  **Adherence:** This is not a suggestion; it is a strict requirement. The duration of each study slot for a chapter must reflect its assessed size and difficulty, using the specific guidance above as a mandatory baseline.
 
         **Revision Strategy:**
         - **Cover New Topics First:** Prioritize covering all new chapters from the **Topic List** before scheduling extensive revision periods.
@@ -99,7 +105,7 @@ export async function createFullStudyPlan(remainingChapters: Chapter[], duration
             - If the duration is long (e.g., 20 chapters in 60 days), create a relaxed schedule, dedicating more time to single topics, and include more revision and practice days.
         3.  **Topic Distribution and Interleaving:** This is a critical requirement. Do not create a plan that focuses on one subject for many days before moving to the next. Instead, **mix the subjects up**. A good daily schedule should ideally include chapters from different subjects (e.g., Physics, Math, and Bangla on the same day). This technique, known as interleaving, improves learning and retention. While high-priority subjects should be covered early, they must be interleaved with other subjects throughout the plan. Ensure all topics from the list are logically distributed and covered within the ${durationInDays}-day period.
         4.  **Daily Structure:** For each day, provide a 'day' identifier (e.g., "Day 1", "Day 2", ... "Day ${durationInDays}") and a list of 'slots'.
-        5.  **Slot Content:** Each time slot must include 'time' (a specific duration reflecting the topic's difficulty), 'topic' (a specific chapter name from the Topic List, 'Revision', 'Practice Test', or 'Break'), and a suggested 'activity' (e.g., 'Deep reading and note-taking', 'Solve past paper questions'). Use the exact chapter names provided in the **Topic List**.
+        5.  **Slot Content:** Each time slot must include 'time' (a specific duration reflecting the topic's size and difficulty), 'topic' (a specific chapter name from the Topic List, 'Revision', 'Practice Test', or 'Break'), and a suggested 'activity' (e.g., 'Deep reading and note-taking', 'Solve past paper questions'). Use the exact chapter names provided in the **Topic List**.
         6.  **Breaks & Revision:** Incorporate short breaks, a lunch break, and dedicated revision sessions as defined in the **Revision Strategy** to ensure retention and prevent burnout.
         7.  **Output Format:** The final output must be a valid JSON array of objects, where each object represents a single day of the plan.
         8.  **Final Verification:** Before outputting the JSON, perform a final check to confirm that every single topic provided in the **Topic List** is present in the generated plan's 'topic' slots. This is the most important rule; failure to include all chapters will render the plan useless.
